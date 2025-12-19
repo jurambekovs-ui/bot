@@ -5,22 +5,21 @@ config();
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
-async function getRates() {
-  try {
-    const res = await fetch("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json");
-    const data = await res.json();
-    return data.usd; 
-  } catch {
-    return null;
-  }
-}
+// URL siz — kurslar qo'lda yozilgan (hardcode)
+const rates = {
+  usd: 12060,  // 1 USD = 12060 UZS
+  eur: 14129,  // 1 EUR = 14129 UZS
+  rub: 150.07  // 1 RUB = 150.07 UZS
+};
 
+// Asosiy menu
 const mainMenu = Markup.keyboard([
   ["💵 USD kurs", "💶 EUR kurs"],
   ["🇷🇺 RUB kurs"],
   ["🔄 Konvertatsiya qilish"]
 ]).resize();
 
+// /start
 bot.start((ctx) => {
   ctx.reply(
     "Assalomu alaykum! 💰\nValyuta kursi botiga xush kelibsiz!\n\nQuyidagi tugmalardan birini tanlang:",
@@ -28,28 +27,16 @@ bot.start((ctx) => {
   );
 });
 
-bot.hears("💵 USD kurs", async (ctx) => {
-  const rates = await getRates();
-  if (!rates) return ctx.reply("❌ Kurslarni yuklay olmadim, keyinroq urinib ko'ring.");
-
-  const kurs = Math.round(rates.uzs);
-  ctx.reply(`💵 1 USD = ${kurs.toLocaleString("ru-RU")} UZS`, mainMenu);
+bot.hears("💵 USD kurs", (ctx) => {
+  ctx.reply(`💵 1 USD = ${rates.usd.toLocaleString("ru-RU")} UZS`, mainMenu);
 });
 
-bot.hears("💶 EUR kurs", async (ctx) => {
-  const rates = await getRates();
-  if (!rates) return ctx.reply("❌ Kurslarni yuklay olmadim.");
-
-  const kurs = Math.round(rates.uzs / rates.eur);
-  ctx.reply(`💶 1 EUR = ${kurs.toLocaleString("ru-RU")} UZS`, mainMenu);
+bot.hears("💶 EUR kurs", (ctx) => {
+  ctx.reply(`💶 1 EUR = ${rates.eur.toLocaleString("ru-RU")} UZS`, mainMenu);
 });
 
-bot.hears("🇷🇺 RUB kurs", async (ctx) => {
-  const rates = await getRates();
-  if (!rates) return ctx.reply("❌ Kurslarni yuklay olmadim.");
-
-  const kurs = (rates.uzs / rates.rub).toFixed(2);
-  ctx.reply(`🇷🇺 1 RUB = ${kurs} UZS`, mainMenu);
+bot.hears("🇷🇺 RUB kurs", (ctx) => {
+  ctx.reply(`🇷🇺 1 RUB = ${rates.rub.toFixed(2)} UZS`, mainMenu);
 });
 
 bot.hears("🔄 Konvertatsiya qilish", (ctx) => {
@@ -63,7 +50,7 @@ bot.hears("🔙 Orqaga", (ctx) => {
   ctx.reply("Bosh menyuga qaytdik!", mainMenu);
 });
 
-bot.on("text", async (ctx) => {
+bot.on("text", (ctx) => {
   const text = ctx.message.text.toLowerCase().trim();
 
   if (["💵 usd kurs", "💶 eur kurs", "🇷🇺 rub kurs", "🔄 konvertatsiya qilish", "🔙 orqaga"].includes(text)) {
@@ -78,24 +65,21 @@ bot.on("text", async (ctx) => {
   const amount = parseFloat(match[1]);
   const cur = match[2];
 
-  const rates = await getRates();
-  if (!rates) return ctx.reply("❌ Kurslarni yuklay olmadim.");
-
   let result;
   if (["usd", "dollar"].includes(cur)) {
-    result = Math.round(amount * rates.uzs);
+    result = Math.round(amount * rates.usd);
     ctx.reply(`💰 ${amount} USD = ${result.toLocaleString("ru-RU")} UZS`, mainMenu);
   } else if (["euro", "eur"].includes(cur)) {
-    result = Math.round(amount * (rates.uzs / rates.eur));
+    result = Math.round(amount * rates.eur);
     ctx.reply(`💰 ${amount} EUR = ${result.toLocaleString("ru-RU")} UZS`, mainMenu);
   } else if (["rubl", "rub"].includes(cur)) {
-    result = Math.round(amount * (rates.uzs / rates.rub));
+    result = Math.round(amount * rates.rub);
     ctx.reply(`💰 ${amount} RUB = ${result.toLocaleString("ru-RU")} UZS`, mainMenu);
   }
 });
 
 bot.launch();
-console.log("💰 Valyuta boti ishga tushdi! Menu tayyor!");
+console.log("💰 Valyuta boti ishga tushdi! (URL siz versiya)");
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
